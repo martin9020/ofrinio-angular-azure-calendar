@@ -99,6 +99,9 @@
           резервация се обадете на {{ phone }} или изпратете запитване.
         </p>
         <p class="api-note">{{ apiStatus() }}</p>
+        <div class="api-badge" [class.connected]="isAzureConnected()" [class.offline]="!isAzureConnected()">
+          {{ isAzureConnected() ? 'Azure API свързан' : 'Демо режим: локален календар' }}
+        </div>
         <form class="request-form" (submit)="onRequestSubmit($event)">
           <label>
             Име
@@ -110,7 +113,12 @@
           </label>
           <label>
             Желани дати
-            <input name="dates" placeholder="например 12-18 август" required>
+            <input
+              name="dates"
+              placeholder="например 2026-08-10 или 12-18 август"
+              required
+              [value]="selectedDates()"
+              (input)="selectedDates.set($any($event.target).value)">
           </label>
           <button class="button primary" type="submit">Изпрати запитване</button>
           @if (requestSent()) {
@@ -128,6 +136,20 @@
           </div>
           <button type="button" (click)="nextMonth()" aria-label="Следващ месец">›</button>
         </div>
+        <div class="availability-summary">
+          <div>
+            <strong>{{ availabilityTotals().free }}</strong>
+            <span>Свободни</span>
+          </div>
+          <div>
+            <strong>{{ availabilityTotals().booked }}</strong>
+            <span>Заети</span>
+          </div>
+          <div>
+            <strong>{{ availabilityTotals().pending }}</strong>
+            <span>Запитвания</span>
+          </div>
+        </div>
         <div class="availability-legend" aria-label="Легенда">
           <span><i class="legend-free"></i>Свободно</span>
           <span><i class="legend-booked"></i>Заето</span>
@@ -140,18 +162,22 @@
         </div>
         <div class="availability-grid">
           @for (day of calendarDays(); track day.dateKey) {
-            <div
+            <button
+              type="button"
               class="availability-day"
               [class.empty]="day.day === null"
+              [class.free]="day.status === 'free'"
               [class.booked]="day.status === 'booked'"
               [class.pending]="day.status === 'pending'"
               [class.today]="day.isToday"
-              [attr.aria-label]="day.day ? day.day + ': ' + statusLabel(day.status) : null">
+              (click)="selectDay(day)"
+              [attr.aria-label]="day.day ? day.day + ': ' + statusLabel(day.status) : null"
+              [disabled]="day.day === null">
               @if (day.day) {
                 <span class="availability-day-number">{{ day.day }}</span>
                 <span class="availability-day-status">{{ statusLabel(day.status) }}</span>
               }
-            </div>
+            </button>
           }
         </div>
       </div>

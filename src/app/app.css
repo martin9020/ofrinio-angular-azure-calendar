@@ -380,6 +380,118 @@ h3 {
   text-align: center;
 }
 
+.api-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+
+.api-badge.connected {
+  background: #e8f7ef;
+  color: #10503d;
+  border: 1px solid rgba(15, 77, 59, 0.12);
+}
+
+.api-badge.offline {
+  background: #fff4d9;
+  color: #7a5815;
+  border: 1px solid rgba(186, 143, 43, 0.16);
+}
+
+.availability-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.availability-summary div {
+  padding: 16px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(23, 33, 38, 0.08);
+  text-align: center;
+}
+
+.availability-summary strong {
+  display: block;
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+  color: var(--deep-sea);
+}
+
+.availability-summary span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.availability-day {
+  cursor: pointer;
+  display: grid;
+  align-content: space-between;
+  min-height: 88px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid rgba(56, 108, 79, 0.26);
+  border-radius: 18px;
+  background: #ebf6f2;
+  color: #154638;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  text-align: left;
+  font: inherit;
+}
+
+.availability-day:hover:not(.empty) {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(23, 33, 38, 0.12);
+}
+
+.availability-day.empty {
+  visibility: hidden;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+
+.availability-day.free {
+  border-color: rgba(56, 108, 79, 0.18);
+  background: #eaf7f1;
+  color: #134237;
+}
+
+.availability-day.booked {
+  border-color: rgba(223, 107, 79, 0.36);
+  background: #ffe9e3;
+  color: #8d3524;
+}
+
+.availability-day.pending {
+  border-color: rgba(212, 162, 37, 0.45);
+  background: #fff6d8;
+  color: #7a5a0d;
+}
+
+.availability-day.today {
+  outline: 2px solid var(--sea);
+  outline-offset: 1px;
+}
+
+.availability-day-number {
+  font-weight: 700;
+}
+
+.availability-day-status {
+  font-size: 0.78rem;
+}
+
 .availability-toolbar span {
   color: var(--muted);
   font-size: 0.88rem;

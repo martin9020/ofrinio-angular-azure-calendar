@@ -58,6 +58,7 @@ const FALLBACK_AVAILABILITY: AvailabilityEntry[] = [
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [NgStyle],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -68,10 +69,24 @@ export class App {
   readonly mapHref = 'https://maps.app.goo.gl/c3q7VnYSKXxaoDFJ7?g_st=ic';
   readonly weekdays = WEEKDAYS_BG;
   readonly selectedPhoto = signal<Photo | null>(null);
-  readonly apiStatus = signal('Локален демо календар. Готово за свързване с Azure API.');
+  readonly selectedDates = signal('');
+  readonly apiBase = signal(window.OFRINIO_API_BASE?.replace(/\/$/, '') ?? '');
+  readonly apiStatus = signal(this.apiBase().length
+    ? 'Свързване към Azure API...'
+    : 'Локален демо календар. Готово за свързване с Azure API.');
+  readonly isAzureConnected = computed(() => this.apiBase().length > 0);
   readonly availability = signal(new Map<string, AvailabilityStatus>());
   readonly activeMonth = signal(this.initialMonth());
   readonly requestSent = signal(false);
+  readonly availabilityTotals = computed(() => {
+    const totals = { free: 0, booked: 0, pending: 0 };
+    for (const day of this.calendarDays()) {
+      if (day.day !== null) {
+        totals[day.status] += 1;
+      }
+    }
+    return totals;
+  });
 
   readonly facts = [
     ['Разстояние', '50 м от плажа'],
@@ -147,13 +162,59 @@ export class App {
 
   onRequestSubmit(event: Event): void {
     event.preventDefault();
-    this.requestSent.set(true);
+    const form = event.target as HTMLFormElement;
+    const formData = new FormData(form);
+    const name = (formData.get('name') as string).trim();
+    const phone = (formData.get('phone') as string).trim();
+    const requestedDates = (formData.get('dates') as string || this.selectedDates()).trim();
+
+    if (!name || !phone || !requestedDates) {
+      this.apiStatus.set('Моля, попълнете име, телефон и желани дати.');
+      return;
+    }
+
+    const apiBase = this.apiBase();
+    if (apiBase) {
+      this.apiStatus.set('Изпращане на запитване...');
+      fetch(`${apiBase}/api/booking-requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ name, phone, requestedDates, message: '' }),
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error();
+          this.requestSent.set(true);
+          this.apiStatus.set('Запитването е изпратено успешно.');
+          form.reset();
+          this.selectedDates.set('');
+        })
+        .catch(() => {
+          this.apiStatus.set('Възникна грешка при изпращането.');
+        });
+    } else {
+      this.requestSent.set(true);
+      this.apiStatus.set('Демо режим: заявката ще се запази само локално.');
+      form.reset();
+      this.selectedDates.set('');
+    }
   }
 
   statusLabel(status: AvailabilityStatus): string {
     if (status === 'booked') return 'Заето';
     if (status === 'pending') return 'Запитване';
     return 'Свободно';
+  }
+
+  selectDay(day: CalendarDay): void {
+    if (day.day === null) {
+      return;
+    }
+
+    this.selectedDates.set(day.dateKey);
+    this.apiStatus.set(`Избрана дата: ${day.dateKey}. Попълнете желания период във формата.`);
   }
 
   private initialMonth(): Date {
