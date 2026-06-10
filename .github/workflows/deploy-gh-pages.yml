@@ -21,4 +21,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v5
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist/ofrinio-angular-azure-calendar
+          publish_dir: ./dist/ofrinio-angular-azure-calendar/browser

@@ -1,3 +1,4 @@
+@if (route() === 'public') {
 <header class="site-header">
   <a class="brand" href="#top" aria-label="Офринио Бийч Апартамент">
     <span class="brand-mark">OB</span>
@@ -8,8 +9,12 @@
     <a href="#calendar">Календар</a>
     <a href="#prices">Цени</a>
     <a href="#location">Локация</a>
+    <a href="#admin">Админ</a>
   </nav>
-  <a class="header-call" [href]="phoneHref">{{ phone }}</a>
+  <div class="header-actions">
+    <a class="header-login" href="#/login">Log-in</a>
+    <a class="header-call" [href]="phoneHref">{{ phone }}</a>
+  </div>
 </header>
 
 <main id="top">
@@ -100,7 +105,7 @@
         </p>
         <p class="api-note">{{ apiStatus() }}</p>
         <div class="api-badge" [class.connected]="isAzureConnected()" [class.offline]="!isAzureConnected()">
-          {{ isAzureConnected() ? 'Azure API свързан' : 'Демо режим: локален календар' }}
+          {{ apiBadgeLabel() }}
         </div>
         <form class="request-form" (submit)="onRequestSubmit($event)">
           <label>
@@ -184,6 +189,136 @@
     </div>
   </section>
 
+  <section class="section admin-section" id="admin" aria-labelledby="admin-title">
+    <div class="section-inner admin-layout">
+      <div class="admin-copy">
+        <p class="section-kicker">Azure SQL</p>
+        <h2 id="admin-title">Собственик календар</h2>
+        <p class="api-note">{{ adminMessage() || 'Входът е само за редакция на Azure календара.' }}</p>
+
+        @if (!adminLoggedIn()) {
+          <form class="admin-panel" (submit)="onAdminLogin($event)">
+            <label>
+              Потребител
+              <input
+                autocomplete="username"
+                [value]="adminUsername()"
+                (input)="adminUsername.set($any($event.target).value)"
+                required>
+            </label>
+            <label>
+              Парола
+              <input
+                type="password"
+                autocomplete="current-password"
+                [value]="adminPassword()"
+                (input)="adminPassword.set($any($event.target).value)"
+                required>
+            </label>
+            <button class="button primary" type="submit" [disabled]="adminBusy()">
+              {{ adminBusy() ? 'Проверка...' : 'Вход' }}
+            </button>
+          </form>
+        } @else {
+          <div class="admin-actions">
+            <label class="admin-switch">
+              <input
+                type="checkbox"
+                [checked]="adminSupabaseSyncEnabled()"
+                (change)="onAdminSupabaseSyncChange($event)"
+                [disabled]="adminBusy()">
+              <span>Supabase sync</span>
+            </label>
+            <button class="button secondary" type="button" (click)="importSupabaseToAzure()" [disabled]="adminBusy()">
+              Импорт от Supabase
+            </button>
+            <button class="button ghost dark" type="button" (click)="loadAdminAvailability()" [disabled]="adminBusy()">
+              Обнови
+            </button>
+            <button class="button ghost dark" type="button" (click)="adminLogout()">
+              Изход
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (adminLoggedIn()) {
+        <div class="admin-editor">
+          <form class="admin-panel admin-form" (submit)="onAdminSaveRange($event)">
+            <label>
+              От дата
+              <input
+                type="date"
+                [value]="adminStartDate()"
+                (input)="adminStartDate.set($any($event.target).value)"
+                required>
+            </label>
+            <label>
+              До дата
+              <input
+                type="date"
+                [value]="adminEndDate()"
+                (input)="adminEndDate.set($any($event.target).value)">
+            </label>
+            <label>
+              Статус
+              <select [value]="adminStatus()" (change)="adminStatus.set($any($event.target).value)">
+                <option value="booked">Заето</option>
+                <option value="pending">Запитване</option>
+                <option value="free">Свободно</option>
+              </select>
+            </label>
+            <label>
+              Име
+              <input
+                [value]="adminGuestName()"
+                (input)="adminGuestName.set($any($event.target).value)"
+                autocomplete="off">
+            </label>
+            <label>
+              Телефон
+              <input
+                [value]="adminPhone()"
+                (input)="adminPhone.set($any($event.target).value)"
+                autocomplete="off">
+            </label>
+            <label class="admin-wide">
+              Бележки
+              <input
+                [value]="adminNotes()"
+                (input)="adminNotes.set($any($event.target).value)"
+                autocomplete="off">
+            </label>
+            <button class="button primary admin-wide" type="submit" [disabled]="adminBusy()">
+              {{ adminBusy() ? 'Запис...' : 'Запиши в Azure SQL' }}
+            </button>
+          </form>
+
+          <div class="admin-list">
+            <div class="admin-list-heading">
+              <strong>{{ adminEntries().length }} дати</strong>
+              <span>{{ adminBookedCount() }} заети / {{ adminPendingCount() }} чакащи</span>
+            </div>
+            <div class="admin-rows">
+              @for (entry of adminEntries(); track entry.date) {
+                <div class="admin-row">
+                  <strong>{{ entry.date }}</strong>
+                  <span class="admin-status" [class.booked]="entry.status === 'booked'" [class.pending]="entry.status === 'pending'">
+                    {{ statusLabel(entry.status) }}
+                  </span>
+                  <span>{{ entry.guestName || 'Без име' }}</span>
+                  <span>{{ entry.phone || '' }}</span>
+                </div>
+              } @empty {
+                <p class="api-note">Няма записани Azure дати.</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
   <section class="section prices-section" id="prices" aria-labelledby="prices-title">
     <div class="section-inner">
       <div class="section-heading">
@@ -250,4 +385,192 @@
       <p>{{ photo.label }}</p>
     </div>
   </div>
+}
+} @else if (route() === 'login') {
+  <main class="login-page">
+    <a class="login-brand" href="#top" (click)="navigateTo('public')">
+      <span class="brand-mark">OB</span>
+      <span>Офринио Бийч</span>
+    </a>
+    <form class="login-panel" (submit)="onAdminLogin($event)">
+      <p class="section-kicker">Owner access</p>
+      <h1>Log-in</h1>
+      <p class="api-note">{{ adminMessage() || 'Enter your username and password to edit the Azure SQL calendar.' }}</p>
+      <label>
+        Username
+        <input
+          autocomplete="username"
+          [value]="adminUsername()"
+          (input)="adminUsername.set($any($event.target).value)"
+          required>
+      </label>
+      <label>
+        Password
+        <input
+          type="password"
+          autocomplete="current-password"
+          [value]="adminPassword()"
+          (input)="adminPassword.set($any($event.target).value)"
+          required>
+      </label>
+      <button class="button primary" type="submit" [disabled]="adminBusy()">
+        {{ adminBusy() ? 'Checking...' : 'Log-in' }}
+      </button>
+      <a class="login-back" href="#top" (click)="navigateTo('public')">Back to website</a>
+    </form>
+  </main>
+} @else {
+  <main class="owner-page">
+    <header class="owner-header">
+      <div>
+        <strong>Reservations</strong>
+        <span>{{ ownerUniqueReservationCount() }} groups / {{ adminEntries().length }} dates</span>
+      </div>
+      <div class="owner-header-actions">
+        <label class="owner-sync">
+          <input
+            type="checkbox"
+            [checked]="adminSupabaseSyncEnabled()"
+            (change)="onAdminSupabaseSyncChange($event)"
+            [disabled]="adminBusy()">
+          <span>Supabase sync</span>
+        </label>
+        <button type="button" class="owner-button muted" (click)="importSupabaseToAzure()" [disabled]="adminBusy()">Import</button>
+        <button type="button" class="owner-button muted" (click)="loadAdminAvailability()" [disabled]="adminBusy()">Refresh</button>
+        <button type="button" class="owner-button muted" (click)="navigateTo('public')">Website</button>
+        <button type="button" class="owner-button danger" (click)="adminLogout()">Logout</button>
+      </div>
+    </header>
+
+    @if (adminMessage()) {
+      <div class="owner-message">{{ adminMessage() }}</div>
+    }
+
+    <section class="owner-toolbar">
+      <button type="button" class="owner-nav" (click)="ownerPreviousMonth()" aria-label="Previous month">‹</button>
+      <h1>{{ ownerMonthTitle() }}</h1>
+      <button type="button" class="owner-nav" (click)="ownerNextMonth()" aria-label="Next month">›</button>
+    </section>
+
+    <section class="owner-selection">
+      <button
+        type="button"
+        class="owner-button primary"
+        (click)="openOwnerAdd()"
+        [disabled]="ownerSelectedDates().length === 0 || adminBusy()">
+        + Reservation for {{ ownerSelectedDates().length }} dates
+      </button>
+      <button
+        type="button"
+        class="owner-button danger"
+        (click)="deleteOwnerSelectedReservations()"
+        [disabled]="ownerSelectedDates().length === 0 || adminBusy()">
+        Delete selected
+      </button>
+      <button type="button" class="owner-button muted" (click)="clearOwnerSelection()">Clear</button>
+      <span>
+        @if (ownerSelectedDates().length) {
+          {{ ownerFormatDateList(ownerSelectedDates()) }}
+        } @else {
+          Select dates or drag across the calendar.
+        }
+      </span>
+    </section>
+
+    <section class="owner-calendar-shell">
+      <div class="owner-weekdays">
+        @for (weekday of weekdays; track weekday) {
+          <span>{{ weekday }}</span>
+        }
+      </div>
+      <div class="owner-grid">
+        @for (day of ownerCalendarDays(); track day.dateKey) {
+          <div
+            class="owner-day"
+            [class.empty]="day.day === null"
+            [class.today]="day.isToday"
+            [class.selected]="isOwnerDateSelected(day.dateKey)"
+            [attr.data-owner-date]="day.day ? day.dateKey : null"
+            role="button"
+            tabindex="0"
+            (pointerdown)="beginOwnerDateSelection($event, day)"
+            (pointermove)="continueOwnerDateSelection($event)"
+            (pointerup)="endOwnerDateSelection($event)"
+            (pointercancel)="endOwnerDateSelection($event)"
+            (keydown)="toggleOwnerDateFromKeyboard($event, day)">
+            @if (day.day) {
+              <strong>{{ day.day }}</strong>
+              @if (isOwnerDateSelected(day.dateKey)) {
+                <span class="owner-check">✓</span>
+              }
+              @if (ownerReservationFor(day.dateKey); as reservation) {
+                <button
+                  type="button"
+                  class="owner-chip"
+                  [class.booked]="reservation.status === 'booked'"
+                  [class.pending]="reservation.status === 'pending'"
+                  (pointerdown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation(); openOwnerEdit(reservation)">
+                  <span>{{ reservation.name }}</span>
+                  @if (reservation.phone) {
+                    <small>{{ reservation.phone }}</small>
+                  }
+                </button>
+                <button
+                  type="button"
+                  class="owner-chip-delete"
+                  aria-label="Delete reservation"
+                  (pointerdown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation(); deleteOwnerReservation(reservation)">
+                  ×
+                </button>
+              }
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    @if (ownerModal()) {
+      <div class="owner-modal-backdrop" (click)="closeOwnerModal()">
+        <form class="owner-modal" (submit)="$event.preventDefault(); saveOwnerReservation()" (click)="$event.stopPropagation()">
+          <h2>{{ ownerModal() === 'add' ? 'New reservation' : 'Edit reservation' }}</h2>
+          <p>{{ ownerFormatDateList(ownerEditDates()) }}</p>
+          <label>
+            Guest name
+            <input
+              [value]="ownerFormName()"
+              (input)="ownerFormName.set($any($event.target).value)"
+              autocomplete="off"
+              required>
+          </label>
+          <label>
+            Phone
+            <input
+              [value]="ownerFormPhone()"
+              (input)="ownerFormPhone.set($any($event.target).value)"
+              autocomplete="off">
+          </label>
+          <label>
+            Notes
+            <input
+              [value]="ownerFormNotes()"
+              (input)="ownerFormNotes.set($any($event.target).value)"
+              autocomplete="off">
+          </label>
+          <label>
+            Status
+            <select [value]="ownerFormStatus()" (change)="ownerFormStatus.set($any($event.target).value)">
+              <option value="booked">Booked</option>
+              <option value="pending">Pending</option>
+            </select>
+          </label>
+          <div class="owner-modal-actions">
+            <button class="owner-button primary" type="submit" [disabled]="adminBusy()">Save</button>
+            <button class="owner-button muted" type="button" (click)="closeOwnerModal()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    }
+  </main>
 }
