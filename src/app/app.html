@@ -1,0 +1,227 @@
+<header class="site-header">
+  <a class="brand" href="#top" aria-label="Офринио Бийч Апартамент">
+    <span class="brand-mark">OB</span>
+    <span>Офринио Бийч</span>
+  </a>
+  <nav class="nav" aria-label="Основна навигация">
+    <a href="#gallery">Снимки</a>
+    <a href="#calendar">Календар</a>
+    <a href="#prices">Цени</a>
+    <a href="#location">Локация</a>
+  </nav>
+  <a class="header-call" [href]="phoneHref">{{ phone }}</a>
+</header>
+
+<main id="top">
+  <section class="hero" [ngStyle]="heroStyle()" aria-labelledby="hero-title">
+    <div class="hero-content">
+      <p class="eyebrow">Офринио Бийч, Гърция</p>
+      <h1 id="hero-title">Морски апартамент на 50 метра от плажа</h1>
+      <p class="hero-copy">
+        Удобно място за семейна почивка до 4 гости, близо до магазин „Канзас“,
+        заведения „Роял“ и „Мезе-Мезе“, с реални снимки и преглед на свободните дати.
+      </p>
+      <div class="hero-actions">
+        <a class="button primary" [href]="phoneHref">Обади се</a>
+        <a class="button secondary" href="#calendar">Виж свободни дати</a>
+        <a class="button ghost" [href]="mapHref" target="_blank" rel="noopener">Google Maps</a>
+      </div>
+    </div>
+    <dl class="hero-facts" aria-label="Основна информация">
+      @for (fact of facts; track fact[0]) {
+        <div>
+          <dt>{{ fact[0] }}</dt>
+          <dd>{{ fact[1] }}</dd>
+        </div>
+      }
+    </dl>
+  </section>
+
+  <section class="intro-band" aria-label="Кратко представяне">
+    <div class="section-inner intro-grid">
+      <div>
+        <p class="section-kicker">Подготвено за лятото</p>
+        <h2>Апартамент с всичко необходимо до плажа</h2>
+      </div>
+      <p>
+        Жилището разполага със спалня, легло „персон и половина“, два разтегателни
+        дивана, тераса, оборудван кухненски бокс, климатик и ТВ с български канали.
+        Календарът е направен като Angular приложение и е готов за свързване към Azure SQL чрез API.
+      </p>
+    </div>
+  </section>
+
+  <section class="section" id="gallery" aria-labelledby="gallery-title">
+    <div class="section-inner">
+      <div class="section-heading">
+        <p class="section-kicker">Реални снимки от апартамента</p>
+        <h2 id="gallery-title">Снимки</h2>
+      </div>
+      <div class="gallery">
+        @for (photo of photos; track photo.file) {
+          <button type="button" class="photo-tile" (click)="openPhoto(photo)" [attr.aria-label]="photo.label">
+            <img [src]="photoUrl(photo)" [alt]="photo.label" loading="lazy">
+            <span>{{ photo.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section amenities-section" aria-labelledby="amenities-title">
+    <div class="section-inner amenities-layout">
+      <div>
+        <p class="section-kicker">Удобства</p>
+        <h2 id="amenities-title">Практична почивка без излишни усложнения</h2>
+        <p>
+          Сайтът е структуриран като реален booking/availability проект: отделни Angular
+          компоненти, календарна логика, форма за запитване и API слой за бъдеща Azure интеграция.
+        </p>
+      </div>
+      <div class="amenities-grid">
+        @for (item of amenities; track item[0]) {
+          <article>
+            <h3>{{ item[0] }}</h3>
+            <p>{{ item[1] }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="section calendar-section" id="calendar" aria-labelledby="calendar-title">
+    <div class="section-inner calendar-layout">
+      <div class="calendar-copy">
+        <p class="section-kicker">Свободни дати</p>
+        <h2 id="calendar-title">Проверете календара преди резервация</h2>
+        <p>
+          Календарът показва свободни, заети и чакащи дати. За потвърждение на цена и
+          резервация се обадете на {{ phone }} или изпратете запитване.
+        </p>
+        <p class="api-note">{{ apiStatus() }}</p>
+        <form class="request-form" (submit)="onRequestSubmit($event)">
+          <label>
+            Име
+            <input name="name" required autocomplete="name">
+          </label>
+          <label>
+            Телефон
+            <input name="phone" required autocomplete="tel">
+          </label>
+          <label>
+            Желани дати
+            <input name="dates" placeholder="например 12-18 август" required>
+          </label>
+          <button class="button primary" type="submit">Изпрати запитване</button>
+          @if (requestSent()) {
+            <p class="form-success">Запитването е подготвено. В Azure версията тук ще се записва в базата.</p>
+          }
+        </form>
+      </div>
+
+      <div class="availability-calendar">
+        <div class="availability-toolbar">
+          <button type="button" (click)="previousMonth()" aria-label="Предишен месец">‹</button>
+          <div>
+            <strong>{{ currentMonthTitle() }}</strong>
+            <span>Angular календар</span>
+          </div>
+          <button type="button" (click)="nextMonth()" aria-label="Следващ месец">›</button>
+        </div>
+        <div class="availability-legend" aria-label="Легенда">
+          <span><i class="legend-free"></i>Свободно</span>
+          <span><i class="legend-booked"></i>Заето</span>
+          <span><i class="legend-pending"></i>Запитване</span>
+        </div>
+        <div class="availability-weekdays" aria-hidden="true">
+          @for (weekday of weekdays; track weekday) {
+            <span>{{ weekday }}</span>
+          }
+        </div>
+        <div class="availability-grid">
+          @for (day of calendarDays(); track day.dateKey) {
+            <div
+              class="availability-day"
+              [class.empty]="day.day === null"
+              [class.booked]="day.status === 'booked'"
+              [class.pending]="day.status === 'pending'"
+              [class.today]="day.isToday"
+              [attr.aria-label]="day.day ? day.day + ': ' + statusLabel(day.status) : null">
+              @if (day.day) {
+                <span class="availability-day-number">{{ day.day }}</span>
+                <span class="availability-day-status">{{ statusLabel(day.status) }}</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section prices-section" id="prices" aria-labelledby="prices-title">
+    <div class="section-inner">
+      <div class="section-heading">
+        <p class="section-kicker">Цена за период</p>
+        <h2 id="prices-title">Сезонни цени</h2>
+      </div>
+      <div class="price-grid">
+        @for (price of prices; track price[0]) {
+          <article class="price-card">
+            <span>{{ price[0] }}</span>
+            <strong>{{ price[1] }}</strong>
+            <p>{{ price[2] }}</p>
+          </article>
+        }
+      </div>
+      <p class="price-note">Минимален престой: 6 нощувки.</p>
+    </div>
+  </section>
+
+  <section class="section location-section" id="location" aria-labelledby="location-title">
+    <div class="section-inner location-layout">
+      <div>
+        <p class="section-kicker">Локация</p>
+        <h2 id="location-title">Офринио Бийч, близо до плажа и заведенията</h2>
+        <p>
+          Апартаментът е на удобна локация до магазин „Канзас“ и заведения „Роял“ и „Мезе-Мезе“.
+        </p>
+        <div class="contact-box">
+          <p><strong>Резервации:</strong> <a [href]="phoneHref">{{ phone }}</a></p>
+          <p><strong>ЛС:</strong> @Тома Ерделски</p>
+        </div>
+        <div class="inline-actions">
+          <a class="button primary" [href]="phoneHref">Обади се сега</a>
+          <a class="button secondary" [href]="mapHref" target="_blank" rel="noopener">Отвори в Google Maps</a>
+        </div>
+      </div>
+      <div class="map-frame">
+        <iframe
+          title="Карта на локацията в Офринио Бийч"
+          src="https://www.google.com/maps?q=40.756194,23.915306&z=17&output=embed"
+          referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="section-inner footer-inner">
+    <p>Офринио Бийч Апартамент, 50 м от плажа</p>
+    <a [href]="phoneHref">{{ phone }}</a>
+  </div>
+</footer>
+
+<div class="mobile-cta" aria-label="Бърза резервация">
+  <a [href]="phoneHref">Обади се</a>
+  <a href="#calendar">Календар</a>
+</div>
+
+@if (selectedPhoto(); as photo) {
+  <div class="lightbox" role="dialog" aria-modal="true" [attr.aria-label]="photo.label" (click)="closePhoto()">
+    <button class="lightbox-close" type="button" (click)="closePhoto()" aria-label="Затвори">×</button>
+    <div class="lightbox-panel" (click)="$event.stopPropagation()">
+      <img [src]="photoUrl(photo)" [alt]="photo.label">
+      <p>{{ photo.label }}</p>
+    </div>
+  </div>
+}
